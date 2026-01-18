@@ -1,0 +1,1839 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>多店財務總管 V11</title>
+
+    <script
+      src="https://unpkg.com/react@18/umd/react.production.min.js"
+      crossorigin
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+      crossorigin
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+      }
+      .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      .no-select {
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      input,
+      select,
+      textarea {
+        font-size: 16px !important;
+      }
+      .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 text-gray-900 no-select">
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect, useMemo } = React;
+
+      // --- 1. 圖示組件 ---
+      const IconWrapper = ({ children, className, onClick }) => (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={className}
+          onClick={onClick}
+        >
+          {children}
+        </svg>
+      );
+      const Plus = (p) => (
+        <IconWrapper {...p}>
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </IconWrapper>
+      );
+      const ListIcon = (p) => (
+        <IconWrapper {...p}>
+          <line x1="8" y1="6" x2="21" y2="6"></line>
+          <line x1="8" y1="12" x2="21" y2="12"></line>
+          <line x1="8" y1="18" x2="21" y2="18"></line>
+          <line x1="3" y1="6" x2="3.01" y2="6"></line>
+          <line x1="3" y1="12" x2="3.01" y2="12"></line>
+          <line x1="3" y1="18" x2="3.01" y2="18"></line>
+        </IconWrapper>
+      );
+      const PieChart = (p) => (
+        <IconWrapper {...p}>
+          <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+          <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+        </IconWrapper>
+      );
+      const Trash2 = (p) => (
+        <IconWrapper {...p}>
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </IconWrapper>
+      );
+      const TrendingUp = (p) => (
+        <IconWrapper {...p}>
+          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+          <polyline points="17 6 23 6 23 12"></polyline>
+        </IconWrapper>
+      );
+      const TrendingDown = (p) => (
+        <IconWrapper {...p}>
+          <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+          <polyline points="17 18 23 18 23 12"></polyline>
+        </IconWrapper>
+      );
+      const ArrowRightLeft = (p) => (
+        <IconWrapper {...p}>
+          <polyline points="16 3 21 3 21 8"></polyline>
+          <line x1="4" y1="20" x2="21" y2="3"></line>
+          <polyline points="21 16 21 21 16 21"></polyline>
+          <line x1="15" y1="15" x2="21" y2="21"></line>
+          <path d="M4 4l5 5"></path>
+        </IconWrapper>
+      );
+      const Home = (p) => (
+        <IconWrapper {...p}>
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </IconWrapper>
+      );
+      const Wallet = (p) => (
+        <IconWrapper {...p}>
+          <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path>
+          <path d="M4 6v12c0 1.1.9 2 2 2h14v-4"></path>
+          <path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"></path>
+        </IconWrapper>
+      );
+      const Building2 = (p) => (
+        <IconWrapper {...p}>
+          <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path>
+          <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path>
+          <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path>
+          <path d="M10 6h4"></path>
+          <path d="M10 10h4"></path>
+          <path d="M10 14h4"></path>
+          <path d="M10 18h4"></path>
+        </IconWrapper>
+      );
+      const Landmark = (p) => (
+        <IconWrapper {...p}>
+          <line x1="3" y1="22" x2="21" y2="22"></line>
+          <line x1="6" y1="18" x2="6" y2="11"></line>
+          <line x1="10" y1="18" x2="10" y2="11"></line>
+          <line x1="14" y1="18" x2="14" y2="11"></line>
+          <line x1="18" y1="18" x2="18" y2="11"></line>
+          <polygon points="12 2 20 7 4 7"></polygon>
+        </IconWrapper>
+      );
+      const Download = (p) => (
+        <IconWrapper {...p}>
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </IconWrapper>
+      );
+      const Briefcase = (p) => (
+        <IconWrapper {...p}>
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+        </IconWrapper>
+      );
+      const Calendar = (p) => (
+        <IconWrapper {...p}>
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </IconWrapper>
+      );
+      const CheckCircle = (p) => (
+        <IconWrapper {...p}>
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </IconWrapper>
+      );
+      const Settings = (p) => (
+        <IconWrapper {...p}>
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </IconWrapper>
+      );
+      const CreditCard = (p) => (
+        <IconWrapper {...p}>
+          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+          <line x1="1" y1="10" x2="23" y2="10"></line>
+        </IconWrapper>
+      );
+      const Edit2 = (p) => (
+        <IconWrapper {...p}>
+          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+        </IconWrapper>
+      );
+      const User = (p) => (
+        <IconWrapper {...p}>
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </IconWrapper>
+      );
+
+      // --- 2. 設定檔 (資料) ---
+      const SHOPS = [
+        {
+          id: "dalin",
+          name: "大林麻將",
+          type: "business",
+          group: "mahjong",
+          color: "bg-blue-100 text-blue-800",
+        },
+        {
+          id: "bade",
+          name: "八德麻將",
+          type: "business",
+          group: "mahjong",
+          color: "bg-indigo-100 text-indigo-800",
+        },
+        {
+          id: "guanyin",
+          name: "觀音麻將",
+          type: "business",
+          group: "mahjong",
+          color: "bg-purple-100 text-purple-800",
+        },
+        {
+          id: "nankan",
+          name: "南崁麻將",
+          type: "business",
+          group: "mahjong",
+          color: "bg-pink-100 text-pink-800",
+        },
+        {
+          id: "yangmei",
+          name: "楊梅麻將",
+          type: "business",
+          group: "mahjong",
+          color: "bg-rose-100 text-rose-800",
+        },
+        {
+          id: "zhonghe",
+          name: "中和麻將",
+          type: "business",
+          group: "mahjong",
+          color: "bg-orange-100 text-orange-800",
+        },
+        {
+          id: "yemo",
+          name: "野陌餐廳",
+          type: "business",
+          group: "yemo",
+          color: "bg-emerald-100 text-emerald-800",
+        },
+        {
+          id: "company_pool",
+          name: "公司總管",
+          type: "business",
+          group: "general",
+          color: "bg-gray-800 text-white",
+        },
+        {
+          id: "family",
+          name: "家庭/個人",
+          type: "personal",
+          group: "general",
+          color: "bg-slate-200 text-slate-800",
+        },
+      ];
+
+      const CATEGORIES = {
+        business_expense: [
+          "租金",
+          "稅金",
+          "進貨/食材",
+          "水電瓦斯",
+          "廣告費",
+          "人事薪資",
+          "維修雜支",
+          "設備",
+          "其他",
+        ],
+        business_income: ["營業收入", "儲值入帳", "其他收入"],
+        personal_expense: [
+          "學費",
+          "生活費",
+          "保險費",
+          "信用卡費",
+          "購物",
+          "餐費",
+          "交通",
+          "貸款",
+          "其他",
+        ],
+        personal_income: ["薪資", "投資收益", "店鋪盈餘提領", "其他"],
+      };
+
+      const ACCOUNTS = [
+        { id: "my_cash", name: "我的現金", type: "personal" },
+        { id: "my_jkopay", name: "街口支付", type: "personal" },
+        { id: "my_ctbc", name: "中國信託 *96047", type: "personal" },
+        { id: "my_huanan", name: "華南銀行 *28298 (個)", type: "personal" },
+        { id: "my_cathay", name: "國泰世華 *34757", type: "personal" },
+        { id: "my_fubon", name: "台北富邦 *63204", type: "personal" },
+        { id: "my_sinopac", name: "永豐銀行 *83224", type: "personal" },
+        { id: "my_chb", name: "彰化銀行 *85700", type: "personal" },
+        { id: "my_tcbb", name: "台中銀行 *68887", type: "personal" },
+        { id: "my_post", name: "中華郵政 *30626", type: "personal" },
+        { id: "my_taishin", name: "台新銀行", type: "personal" },
+        { id: "my_obank", name: "王道銀行 (個人)", type: "personal" },
+        { id: "my_esun_lin", name: "玉山銀行 (林)", type: "personal" },
+        { id: "my_first", name: "第一銀行", type: "personal" },
+        { id: "my_union", name: "聯邦銀行", type: "personal" },
+        { id: "my_dbs", name: "星展銀行", type: "personal" },
+
+        { id: "card_fubon", name: "富邦信用卡", type: "credit" },
+        { id: "card_taishin", name: "台新信用卡", type: "credit" },
+        { id: "card_union", name: "聯邦信用卡", type: "credit" },
+        { id: "card_esun", name: "玉山信用卡", type: "credit" },
+        { id: "card_ctbc", name: "中信信用卡", type: "credit" },
+        { id: "card_dbs", name: "星展信用卡", type: "credit" },
+        { id: "card_cathay", name: "國泰信用卡", type: "credit" },
+        { id: "card_huanan", name: "華南信用卡", type: "credit" },
+        { id: "card_sinopac", name: "永豐信用卡", type: "credit" },
+        { id: "card_chb", name: "彰銀信用卡", type: "credit" },
+        { id: "card_first", name: "第一信用卡", type: "credit" },
+        { id: "my_card", name: "其他信用卡", type: "credit" },
+
+        { id: "dalin_obank", name: "大林-王道銀行", type: "company" },
+        { id: "bade_obank", name: "八德-王道銀行", type: "company" },
+        { id: "guanyin_obank", name: "觀音-王道銀行", type: "company" },
+        { id: "nankan_obank", name: "南崁-王道銀行", type: "company" },
+        { id: "yemo_huanan", name: "野陌-華南銀行 (公)", type: "company" },
+        { id: "company_general", name: "其他公司戶/店內金", type: "company" },
+      ];
+
+      const INITIAL_BILL_SETTINGS = [
+        {
+          id: "b1",
+          day: 3,
+          name: "聯邦卡費 (含機票)",
+          type: "credit",
+          deductAccount: "my_esun_lin",
+          targetCard: "card_union",
+          fixedAmount: 0,
+          note: "含機票",
+        },
+        {
+          id: "b2",
+          day: 3,
+          name: "台新卡費",
+          type: "credit",
+          deductAccount: "my_esun_lin",
+          targetCard: "card_taishin",
+          fixedAmount: 0,
+          note: "",
+        },
+        {
+          id: "b3",
+          day: 20,
+          name: "台新信貸",
+          type: "loan",
+          deductAccount: "my_esun_lin",
+          targetCard: "",
+          fixedAmount: 16975,
+          note: "",
+        },
+        {
+          id: "b4",
+          day: 20,
+          name: "富邦信貸",
+          type: "loan",
+          deductAccount: "my_esun_lin",
+          targetCard: "",
+          fixedAmount: 30000,
+          note: "29000+5383",
+        },
+        {
+          id: "b5",
+          day: 21,
+          name: "玉山卡費 (林)",
+          type: "credit",
+          deductAccount: "my_esun_lin",
+          targetCard: "card_esun",
+          fixedAmount: 0,
+          note: "",
+        },
+        {
+          id: "b6",
+          day: 6,
+          name: "玉山卡費",
+          type: "credit",
+          deductAccount: "my_ctbc",
+          targetCard: "card_esun",
+          fixedAmount: 0,
+          note: "",
+        },
+        {
+          id: "b7",
+          day: 6,
+          name: "星展卡費 (含廣告)",
+          type: "credit",
+          deductAccount: "my_ctbc",
+          targetCard: "card_dbs",
+          fixedAmount: 0,
+          note: "含廣告",
+        },
+        {
+          id: "b8",
+          day: 9,
+          name: "中信信貸",
+          type: "loan",
+          deductAccount: "my_ctbc",
+          targetCard: "",
+          fixedAmount: 11177,
+          note: "",
+        },
+        {
+          id: "b9",
+          day: 10,
+          name: "中信卡費",
+          type: "credit",
+          deductAccount: "my_ctbc",
+          targetCard: "card_ctbc",
+          fixedAmount: 0,
+          note: "",
+        },
+        {
+          id: "b10",
+          day: 5,
+          name: "台新卡費 (含水電)",
+          type: "credit",
+          deductAccount: "my_taishin",
+          targetCard: "card_taishin",
+          fixedAmount: 0,
+          note: "含水電",
+        },
+        {
+          id: "b11",
+          day: 30,
+          name: "富邦卡費",
+          type: "credit",
+          deductAccount: "my_fubon",
+          targetCard: "card_fubon",
+          fixedAmount: 0,
+          note: "",
+        },
+        {
+          id: "b12",
+          day: 9,
+          name: "國泰卡費",
+          type: "credit",
+          deductAccount: "my_cathay",
+          targetCard: "card_cathay",
+          fixedAmount: 0,
+          note: "",
+        },
+        {
+          id: "b13",
+          day: 10,
+          name: "爸房貸",
+          type: "loan",
+          deductAccount: "my_obank",
+          targetCard: "",
+          fixedAmount: 16000,
+          note: "扣王道",
+        },
+        {
+          id: "b14",
+          day: 11,
+          name: "華南卡費 (含網路)",
+          type: "credit",
+          deductAccount: "my_huanan",
+          targetCard: "card_huanan",
+          fixedAmount: 0,
+          note: "含網路",
+        },
+        {
+          id: "b15",
+          day: 16,
+          name: "永豐卡費",
+          type: "credit",
+          deductAccount: "my_sinopac",
+          targetCard: "card_sinopac",
+          fixedAmount: 0,
+          note: "",
+        },
+        {
+          id: "b16",
+          day: 18,
+          name: "彰銀卡費 (電費)",
+          type: "credit",
+          deductAccount: "my_chb",
+          targetCard: "card_chb",
+          fixedAmount: 0,
+          note: "電費",
+        },
+        {
+          id: "b17",
+          day: 18,
+          name: "第一卡費",
+          type: "credit",
+          deductAccount: "my_first",
+          targetCard: "card_first",
+          fixedAmount: 0,
+          note: "",
+        },
+        {
+          id: "b18",
+          day: 20,
+          name: "房貸",
+          type: "loan",
+          deductAccount: "my_obank",
+          targetCard: "",
+          fixedAmount: 20500,
+          note: "扣王道",
+        },
+        {
+          id: "b19",
+          day: 21,
+          name: "青創貸款",
+          type: "loan",
+          deductAccount: "my_huanan",
+          targetCard: "",
+          fixedAmount: 17657,
+          note: "扣華南/公司",
+        },
+        {
+          id: "b20",
+          day: 21,
+          name: "聯邦卡費",
+          type: "credit",
+          deductAccount: "my_union",
+          targetCard: "card_union",
+          fixedAmount: 0,
+          note: "",
+        },
+      ];
+
+      // --- 3. 輔助函式 ---
+      const isPersonalAccount = (id) =>
+        ACCOUNTS.find((a) => a.id === id)?.type === "personal";
+      const getAccountName = (id) =>
+        ACCOUNTS.find((a) => a.id === id)?.name || id;
+      const getShopName = (id) => SHOPS.find((s) => s.id === id)?.name || id;
+
+      // --- 4. 組件 ---
+
+      const ShopSelector = ({ selectedShop, setSelectedShop }) => {
+        const tabs = [
+          { key: "mahjong", label: "🀄 麻將館", color: "text-blue-600" },
+          { key: "yemo", label: "🍽️ 野陌", color: "text-emerald-600" },
+          { key: "general", label: "⚙️ 總管/個人", color: "text-gray-600" },
+        ];
+        const [activeTab, setActiveTab] = useState("mahjong");
+        useEffect(() => {
+          const shop = SHOPS.find((s) => s.id === selectedShop);
+          if (shop) setActiveTab(shop.group);
+        }, [selectedShop]);
+
+        return (
+          <div className="mb-4">
+            <div className="flex border-b border-gray-200 mb-3">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex-1 py-2 text-sm font-bold border-b-2 transition-colors ${
+                    activeTab === tab.key
+                      ? `border-blue-500 text-gray-900`
+                      : "border-transparent text-gray-400 hover:text-gray-600"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {SHOPS.filter((s) => s.group === activeTab).map((shop) => (
+                <button
+                  key={shop.id}
+                  onClick={() => setSelectedShop(shop.id)}
+                  className={`p-1 rounded-lg text-xs font-bold text-center transition-all flex flex-col items-center justify-center h-16 ${
+                    selectedShop === shop.id
+                      ? "ring-2 ring-offset-1 ring-blue-500 shadow-md transform scale-105 " +
+                        shop.color
+                      : "bg-white border border-gray-100 text-gray-500 hover:bg-gray-50"
+                  }`}
+                >
+                  {shop.id === "company_pool" ? (
+                    <Briefcase size={20} className="mb-1" />
+                  ) : null}
+                  {shop.id === "family" ? (
+                    <Home size={20} className="mb-1" />
+                  ) : null}
+                  <span className="scale-90">
+                    {shop.name.replace("麻將", "").replace("餐廳", "")}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      };
+
+      const BillSettingsView = ({ settings, setSettings, setView }) => {
+        const [isEditing, setIsEditing] = useState(false);
+        const [tempSettings, setTempSettings] = useState(settings);
+
+        const handleSave = () => {
+          setSettings(tempSettings);
+          setIsEditing(false);
+          alert("帳單設定已更新！");
+        };
+
+        const handleChange = (id, field, value) => {
+          setTempSettings((prev) =>
+            prev.map((item) =>
+              item.id === id ? { ...item, [field]: value } : item
+            )
+          );
+        };
+
+        const handleAddBill = () => {
+          const newBill = {
+            id: `b${Date.now()}`,
+            day: 1,
+            name: "新帳單",
+            type: "credit",
+            deductAccount: "my_cash",
+            targetCard: "",
+            fixedAmount: 0,
+            note: "",
+          };
+          setTempSettings((prev) => [...prev, newBill]);
+          setIsEditing(true);
+        };
+
+        const handleDeleteBill = (id) => {
+          if (confirm("確定要刪除此帳單設定嗎？")) {
+            setTempSettings((prev) => prev.filter((item) => item.id !== id));
+            // If we were not in editing mode, we should save immediately or prompt.
+            // To keep it simple, we force editing mode so user must press Save.
+            setIsEditing(true);
+          }
+        };
+
+        return (
+          <div className="p-4 pb-24 max-w-md mx-auto">
+            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center justify-between">
+              <span className="flex items-center">
+                <Settings className="w-6 h-6 mr-2 text-gray-600" /> 帳單設定
+              </span>
+              {isEditing ? (
+                <button
+                  onClick={handleSave}
+                  className="bg-green-600 text-white px-3 py-1 rounded text-sm"
+                >
+                  儲存
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setTempSettings(settings);
+                    setIsEditing(true);
+                  }}
+                  className="bg-blue-600 text-white px-3 py-1 rounded text-sm flex items-center"
+                >
+                  <Edit2 size={14} className="mr-1" /> 編輯
+                </button>
+              )}
+            </h2>
+
+            <div className="bg-yellow-50 p-3 rounded-lg text-xs text-yellow-800 mb-4 border border-yellow-100">
+              在此設定每月的固定貸款與信用卡。設定好後，請到「帳單日曆」進行操作。
+            </div>
+
+            <div className="space-y-3">
+              {tempSettings
+                .sort((a, b) => a.day - b.day)
+                .map((bill) => (
+                  <div
+                    key={bill.id}
+                    className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm relative"
+                  >
+                    {isEditing && (
+                      <button
+                        onClick={() => handleDeleteBill(bill.id)}
+                        className="absolute top-2 right-2 text-gray-300 hover:text-red-500"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                    <div className="flex justify-between items-center mb-2 pr-6">
+                      <div className="flex items-center gap-2">
+                        {isEditing ? (
+                          <div className="flex items-center">
+                            <span className="text-xs text-gray-500 mr-1">
+                              每月
+                            </span>
+                            <input
+                              type="number"
+                              value={bill.day}
+                              onChange={(e) =>
+                                handleChange(
+                                  bill.id,
+                                  "day",
+                                  parseInt(e.target.value)
+                                )
+                              }
+                              className="border rounded px-1 py-0.5 text-sm w-12 text-center"
+                            />
+                            <span className="text-xs text-gray-500 ml-1">
+                              號
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded">
+                            每月 {bill.day} 號
+                          </span>
+                        )}
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={bill.name}
+                            onChange={(e) =>
+                              handleChange(bill.id, "name", e.target.value)
+                            }
+                            className="border rounded px-1 py-0.5 text-sm font-bold w-32"
+                          />
+                        ) : (
+                          <span className="font-bold text-gray-800">
+                            {bill.name}
+                          </span>
+                        )}
+                      </div>
+                      {isEditing ? (
+                        <select
+                          value={bill.type}
+                          onChange={(e) =>
+                            handleChange(bill.id, "type", e.target.value)
+                          }
+                          className="border rounded text-[10px] p-0.5"
+                        >
+                          <option value="credit">信用卡</option>
+                          <option value="loan">貸款</option>
+                        </select>
+                      ) : (
+                        <span
+                          className={`text-[10px] px-1.5 py-0.5 rounded ${
+                            bill.type === "loan"
+                              ? "bg-orange-100 text-orange-700"
+                              : "bg-blue-100 text-blue-700"
+                          }`}
+                        >
+                          {bill.type === "loan" ? "固定貸款" : "信用卡"}
+                        </span>
+                      )}
+                    </div>
+
+                    {isEditing ? (
+                      <div className="grid grid-cols-2 gap-2 text-sm mt-2">
+                        <div>
+                          <label className="text-[10px] text-gray-400 block">
+                            扣款銀行
+                          </label>
+                          <select
+                            value={bill.deductAccount}
+                            onChange={(e) =>
+                              handleChange(
+                                bill.id,
+                                "deductAccount",
+                                e.target.value
+                              )
+                            }
+                            className="w-full border rounded text-xs p-1"
+                          >
+                            {ACCOUNTS.map((a) => (
+                              <option key={a.id} value={a.id}>
+                                {a.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        {bill.type === "loan" ? (
+                          <div>
+                            <label className="text-[10px] text-gray-400 block">
+                              固定金額
+                            </label>
+                            <input
+                              type="number"
+                              value={bill.fixedAmount}
+                              onChange={(e) =>
+                                handleChange(
+                                  bill.id,
+                                  "fixedAmount",
+                                  parseFloat(e.target.value)
+                                )
+                              }
+                              className="w-full border rounded text-xs p-1"
+                            />
+                          </div>
+                        ) : (
+                          <div>
+                            <label className="text-[10px] text-gray-400 block">
+                              對應虛擬卡(記帳用)
+                            </label>
+                            <select
+                              value={bill.targetCard}
+                              onChange={(e) =>
+                                handleChange(
+                                  bill.id,
+                                  "targetCard",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full border rounded text-xs p-1"
+                            >
+                              <option value="">無</option>
+                              {ACCOUNTS.filter((a) => a.type === "credit").map(
+                                (a) => (
+                                  <option key={a.id} value={a.id}>
+                                    {a.name}
+                                  </option>
+                                )
+                              )}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-gray-500 mt-1 flex justify-between">
+                        <span>
+                          從 {getAccountName(bill.deductAccount)} 扣款
+                        </span>
+                        {bill.type === "loan" && (
+                          <span className="font-bold">
+                            ${bill.fixedAmount.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
+
+            <button
+              onClick={handleAddBill}
+              className="mt-4 w-full py-3 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg font-bold flex items-center justify-center"
+            >
+              <Plus size={18} className="mr-1" /> 新增一筆固定帳單
+            </button>
+
+            <button
+              onClick={() => setView("bills")}
+              className="mt-4 w-full py-3 bg-gray-200 text-gray-700 rounded-lg font-bold"
+            >
+              返回帳單日曆
+            </button>
+          </div>
+        );
+      };
+
+      const BillDashboard = ({
+        settings,
+        transactions,
+        handleAddTransaction,
+        setView,
+      }) => {
+        const [billStates, setBillStates] = useState({});
+        const currentMonth = new Date().toISOString().slice(0, 7);
+
+        useEffect(() => {
+          const saved = localStorage.getItem(
+            `boss_finance_bills_${currentMonth}`
+          );
+          if (saved) setBillStates(JSON.parse(saved));
+        }, [currentMonth]);
+
+        useEffect(() => {
+          if (Object.keys(billStates).length > 0) {
+            localStorage.setItem(
+              `boss_finance_bills_${currentMonth}`,
+              JSON.stringify(billStates)
+            );
+          }
+        }, [billStates, currentMonth]);
+
+        const getRecordedAmount = (cardId) => {
+          if (!cardId) return 0;
+          return transactions
+            .filter(
+              (t) =>
+                t.accountId === cardId &&
+                t.date.startsWith(currentMonth) &&
+                t.type === "expense"
+            )
+            .reduce((sum, t) => sum + t.amount, 0);
+        };
+
+        const handlePay = (bill) => {
+          const recorded = getRecordedAmount(bill.targetCard);
+          const actual =
+            billStates[bill.id]?.actualAmount ||
+            (bill.type === "loan" ? bill.fixedAmount : 0);
+
+          if (actual <= 0) return alert("請輸入實際帳單金額");
+
+          let confirmMsg = `確定要繳納「${bill.name}」嗎？\n`;
+          confirmMsg += `扣款帳戶：${getAccountName(bill.deductAccount)}\n`;
+          confirmMsg += `扣款金額：$${actual.toLocaleString()}\n`;
+
+          let diff = 0;
+          if (bill.type === "credit") {
+            diff = actual - recorded;
+            confirmMsg += `(App已記帳: $${recorded.toLocaleString()}，將自動補記差額 $${diff.toLocaleString()} 為雜支/水電)`;
+          }
+
+          if (confirm(confirmMsg)) {
+            if (bill.type === "credit" && diff > 0) {
+              handleAddTransaction({
+                id: Date.now(),
+                date: new Date().toISOString().slice(0, 10),
+                shopId: "family",
+                type: "expense",
+                amount: diff,
+                category: "水電瓦斯",
+                accountId: bill.targetCard,
+                note: `[系統] ${bill.name} 自動扣繳補差額 (如水電/手續費)`,
+              });
+            }
+
+            if (bill.type === "loan") {
+              handleAddTransaction({
+                id: Date.now() + 1,
+                date: new Date().toISOString().slice(0, 10),
+                shopId: bill.name.includes("青創") ? "company_pool" : "family",
+                type: "expense",
+                amount: actual,
+                category: "貸款",
+                accountId: bill.deductAccount,
+                note: `[帳單] 繳納 ${bill.name}`,
+              });
+            } else {
+              handleAddTransaction({
+                id: Date.now() + 1,
+                date: new Date().toISOString().slice(0, 10),
+                shopId: "family",
+                type: "transfer",
+                amount: actual,
+                category: "繳卡費",
+                accountId: bill.deductAccount,
+                toAccountId: bill.targetCard,
+                note: `[帳單] 繳納 ${bill.name}`,
+              });
+            }
+            setBillStates((prev) => ({
+              ...prev,
+              [bill.id]: { ...prev[bill.id], paid: true },
+            }));
+          }
+        };
+
+        const updateAmount = (billId, val) => {
+          setBillStates((prev) => ({
+            ...prev,
+            [billId]: { ...prev[billId], actualAmount: parseFloat(val) },
+          }));
+        };
+
+        const totalActual = Object.values(billStates).reduce(
+          (sum, s) => sum + (s.paid ? s.actualAmount || 0 : 0),
+          0
+        );
+
+        return (
+          <div className="p-4 pb-24 max-w-md mx-auto">
+            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center justify-between">
+              <span className="flex items-center">
+                <Calendar className="w-6 h-6 mr-2 text-indigo-600" /> 帳單管家
+              </span>
+              <button
+                onClick={() => setView("settings")}
+                className="text-xs bg-gray-200 px-2 py-1 rounded flex items-center"
+              >
+                <Settings size={12} className="mr-1" /> 設定
+              </button>
+            </h2>
+
+            <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-indigo-500 mb-6">
+              <p className="text-xs text-gray-500 font-bold mb-1">
+                本月資金調度總覽 ({currentMonth})
+              </p>
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-gray-600">已繳納總額</div>
+                <div className="text-2xl font-bold text-indigo-600">
+                  ${totalActual.toLocaleString()}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {settings
+                .sort((a, b) => a.day - b.day)
+                .map((bill) => {
+                  const state = billStates[bill.id] || {};
+                  const recorded = getRecordedAmount(bill.targetCard);
+                  const isPaid = state.paid;
+
+                  return (
+                    <div
+                      key={bill.id}
+                      className={`relative p-3 rounded-lg border transition-all ${
+                        isPaid
+                          ? "bg-gray-50 border-gray-100 opacity-60"
+                          : "bg-white border-gray-200 shadow-sm"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="bg-indigo-50 text-indigo-700 w-10 h-10 rounded-lg flex flex-col items-center justify-center font-bold leading-none">
+                            <span className="text-[10px]">每月</span>
+                            <span className="text-lg">{bill.day}</span>
+                          </div>
+                          <div>
+                            <div className="font-bold text-gray-800 text-sm">
+                              {bill.name}
+                            </div>
+                            <div className="text-[10px] text-gray-400">
+                              從 {getAccountName(bill.deductAccount)} 扣款
+                            </div>
+                          </div>
+                        </div>
+                        {isPaid ? (
+                          <span className="text-green-600 font-bold text-xs flex items-center">
+                            <CheckCircle size={14} className="mr-1" /> 已繳 $
+                            {state.actualAmount?.toLocaleString()}
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handlePay(bill)}
+                            className="bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-lg shadow hover:bg-indigo-700"
+                          >
+                            確認扣款
+                          </button>
+                        )}
+                      </div>
+
+                      {!isPaid && (
+                        <div className="bg-gray-50 rounded p-2 text-sm mt-2">
+                          {bill.type === "loan" ? (
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-500 text-xs">
+                                應繳金額
+                              </span>
+                              <span className="font-bold text-gray-900">
+                                ${bill.fixedAmount.toLocaleString()}
+                              </span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-gray-500 text-xs flex items-center">
+                                  App已記帳{" "}
+                                  <span className="ml-1 text-[10px] bg-gray-200 px-1 rounded">
+                                    {bill.targetCard ? "有連結" : "無連結"}
+                                  </span>
+                                </span>
+                                <span className="font-medium text-gray-700">
+                                  ${recorded.toLocaleString()}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-indigo-600 font-bold text-xs">
+                                  輸入實際帳單金額:
+                                </span>
+                                <input
+                                  type="number"
+                                  placeholder={recorded > 0 ? recorded : "0"}
+                                  className="w-24 text-right border-b border-indigo-300 bg-transparent font-bold text-indigo-700 focus:outline-none"
+                                  onChange={(e) =>
+                                    updateAmount(bill.id, e.target.value)
+                                  }
+                                />
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        );
+      };
+
+      const AddView = ({
+        date,
+        setDate,
+        selectedShop,
+        setSelectedShop,
+        type,
+        setType,
+        amount,
+        setAmount,
+        category,
+        setCategory,
+        accountId,
+        setAccountId,
+        toAccountId,
+        setToAccountId,
+        note,
+        setNote,
+        handleSave,
+        availableCategories,
+        user,
+      }) => {
+        return (
+          <div className="p-4 pb-24 max-w-md mx-auto">
+            <h2 className="text-xl font-bold text-gray-800 mb-3 flex items-center justify-between">
+              <div className="flex items-center">
+                <Plus className="w-6 h-6 mr-2 text-blue-600" /> 記一筆
+              </div>
+              <span className="text-sm bg-gray-100 px-2 py-1 rounded text-gray-500">
+                使用者: {user === "wife" ? "👩 老婆" : "👨 老公"}
+              </span>
+            </h2>
+            <ShopSelector
+              selectedShop={selectedShop}
+              setSelectedShop={setSelectedShop}
+            />
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4 mt-2">
+              <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
+                <button
+                  onClick={() => setType("expense")}
+                  className={`flex-1 py-2 rounded-md text-sm font-bold flex items-center justify-center ${
+                    type === "expense"
+                      ? "bg-red-500 text-white shadow-sm"
+                      : "text-gray-500"
+                  }`}
+                >
+                  <TrendingDown className="w-4 h-4 mr-1" /> 支出
+                </button>
+                <button
+                  onClick={() => setType("income")}
+                  className={`flex-1 py-2 rounded-md text-sm font-bold flex items-center justify-center ${
+                    type === "income"
+                      ? "bg-green-500 text-white shadow-sm"
+                      : "text-gray-500"
+                  }`}
+                >
+                  <TrendingUp className="w-4 h-4 mr-1" /> 收入
+                </button>
+                <button
+                  onClick={() => setType("transfer")}
+                  className={`flex-1 py-2 rounded-md text-sm font-bold flex items-center justify-center ${
+                    type === "transfer"
+                      ? "bg-blue-500 text-white shadow-sm"
+                      : "text-gray-500"
+                  }`}
+                >
+                  <ArrowRightLeft className="w-4 h-4 mr-1" /> 轉帳
+                </button>
+              </div>
+              <div className="flex gap-3 mb-4">
+                <div className="flex-1">
+                  <label className="text-xs text-gray-500 mb-1 block">
+                    金額
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-3 text-gray-400">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="0"
+                      className="w-full p-3 pl-8 text-2xl font-bold bg-gray-50 rounded-lg border-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <div className="w-1/3">
+                  <label className="text-xs text-gray-500 mb-1 block">
+                    日期
+                  </label>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full p-3 h-[56px] bg-gray-50 rounded-lg border-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                </div>
+              </div>
+              {type === "transfer" ? (
+                <div className="bg-blue-50 p-3 rounded-lg mb-4 border border-blue-100">
+                  <div className="mb-3">
+                    <label className="text-xs text-gray-500 mb-1 block">
+                      轉出 (錢變少)
+                    </label>
+                    <select
+                      value={accountId}
+                      onChange={(e) => setAccountId(e.target.value)}
+                      className="w-full p-2 bg-white rounded border border-gray-200 text-sm"
+                    >
+                      <optgroup label="帳戶">
+                        {ACCOUNTS.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </select>
+                  </div>
+                  <div className="flex justify-center -my-2 relative z-10">
+                    <div className="bg-white rounded-full p-1 border border-gray-200">
+                      <ArrowRightLeft className="w-4 h-4 text-gray-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">
+                      轉入 (錢變多)
+                    </label>
+                    <select
+                      value={toAccountId}
+                      onChange={(e) => setToAccountId(e.target.value)}
+                      className="w-full p-2 bg-white rounded border border-gray-200 text-sm"
+                    >
+                      <optgroup label="帳戶">
+                        {ACCOUNTS.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </select>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4">
+                  <label className="text-xs text-gray-500 mb-1 block">
+                    支付方式 / 入帳帳戶
+                  </label>
+                  <div className="relative">
+                    <Landmark className="absolute left-3 top-3.5 text-gray-400 w-5 h-5" />
+                    <select
+                      value={accountId}
+                      onChange={(e) => setAccountId(e.target.value)}
+                      className="w-full p-3 pl-10 bg-amber-50 text-gray-800 font-medium rounded-lg border border-amber-200 focus:ring-2 focus:ring-amber-500 appearance-none"
+                    >
+                      <optgroup label="常用">
+                        {ACCOUNTS.filter((a) => a.type !== "credit").map(
+                          (acc) => (
+                            <option key={acc.id} value={acc.id}>
+                              {acc.name}
+                            </option>
+                          )
+                        )}
+                      </optgroup>
+                      <optgroup label="信用卡(記帳用)">
+                        {ACCOUNTS.filter((a) => a.type === "credit").map(
+                          (acc) => (
+                            <option key={acc.id} value={acc.id}>
+                              {acc.name}
+                            </option>
+                          )
+                        )}
+                      </optgroup>
+                    </select>
+                  </div>
+                  {type === "expense" &&
+                    selectedShop !== "family" &&
+                    selectedShop !== "company_pool" && (
+                      <p className="text-xs mt-1 ml-1">
+                        {isPersonalAccount(accountId) ? (
+                          <span className="text-red-500 font-bold">
+                            ⚠️ 將計入代墊款 (公司欠妳)
+                          </span>
+                        ) : (
+                          <span className="text-green-600">
+                            ✅ 公司自行支付 (不計代墊)
+                          </span>
+                        )}
+                      </p>
+                    )}
+                </div>
+              )}
+              {type !== "transfer" && (
+                <div className="mb-4">
+                  <label className="text-xs text-gray-500 mb-1 block">
+                    分類
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {availableCategories.map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setCategory(cat)}
+                        className={`p-2 rounded-lg text-xs ${
+                          category === cat
+                            ? "bg-blue-100 text-blue-700 border border-blue-200 font-bold"
+                            : "bg-gray-50 text-gray-600 border border-transparent"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">備註</label>
+                <input
+                  type="text"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="備註..."
+                  className="w-full p-3 bg-gray-50 rounded-lg border-none"
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleSave}
+              className={`w-full py-4 text-white rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-transform ${
+                type === "transfer" ? "bg-blue-600" : "bg-gray-900"
+              }`}
+            >
+              {type === "transfer" ? "確認轉帳" : "確認儲存"}
+            </button>
+          </div>
+        );
+      };
+
+      const ReportView = ({ transactions }) => {
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const [monthFilter, setMonthFilter] = useState(currentMonth);
+        const filteredTx = useMemo(
+          () => transactions.filter((t) => t.date.startsWith(monthFilter)),
+          [transactions, monthFilter]
+        );
+        const handleExportCSV = () => {
+          const headers = [
+            "日期",
+            "店鋪",
+            "類型",
+            "金額",
+            "分類",
+            "帳戶",
+            "備註",
+            "記帳人",
+          ];
+          const rows = filteredTx.map((t) => [
+            t.date,
+            getShopName(t.shopId),
+            t.type,
+            t.amount,
+            t.category,
+            getAccountName(t.accountId),
+            t.note,
+            t.user === "husband" ? "老公" : "老婆",
+          ]);
+          const csvContent = [
+            "\uFEFF" + headers.join(","),
+            ...rows.map((row) => row.map((item) => `"${item}"`).join(",")),
+          ].join("\n");
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(
+            new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+          );
+          link.setAttribute("download", `財務報表_${monthFilter}.csv`);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        };
+        const reportData = SHOPS.filter(
+          (s) => s.type === "business" && s.id !== "company_pool"
+        ).map((shop) => {
+          const shopTx = filteredTx.filter((t) => t.shopId === shop.id);
+          return {
+            ...shop,
+            income: shopTx
+              .filter((t) => t.type === "income")
+              .reduce((sum, t) => sum + t.amount, 0),
+            expense: shopTx
+              .filter((t) => t.type === "expense")
+              .reduce((sum, t) => sum + t.amount, 0),
+          };
+        });
+        const totalProfit = reportData.reduce(
+          (sum, s) => sum + (s.income - s.expense),
+          0
+        );
+        const totalAdvanced = filteredTx
+          .filter(
+            (t) =>
+              t.type === "expense" &&
+              t.shopId !== "family" &&
+              t.shopId !== "company_pool" &&
+              isPersonalAccount(t.accountId)
+          )
+          .reduce((sum, t) => sum + t.amount, 0);
+        const totalPersonalExpense = filteredTx
+          .filter((t) => t.type === "expense" && t.shopId === "family")
+          .reduce((sum, t) => sum + t.amount, 0);
+        return (
+          <div className="p-4 pb-24 max-w-md mx-auto bg-gray-50 min-h-screen">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center">
+                <PieChart className="w-6 h-6 mr-2 text-purple-600" /> 損益報表
+              </h2>
+              <div className="flex gap-2">
+                <input
+                  type="month"
+                  value={monthFilter}
+                  onChange={(e) => setMonthFilter(e.target.value)}
+                  className="text-sm bg-white border border-gray-300 rounded px-2 py-1 w-32"
+                />
+                <button
+                  onClick={handleExportCSV}
+                  className="bg-blue-600 text-white p-1.5 rounded"
+                >
+                  <Download size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-green-500 mb-4">
+              <p className="text-xs text-gray-500 font-bold">本月各店總淨利</p>
+              <p className="text-2xl font-bold text-green-600">
+                ${totalProfit.toLocaleString()}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-red-500 relative overflow-hidden">
+                <div className="absolute right-0 top-0 p-1 opacity-10">
+                  <Wallet size={40} />
+                </div>
+                <div className="text-gray-500 text-xs font-bold mb-1">
+                  本月妳先墊的錢
+                </div>
+                <div className="text-xl font-bold text-red-600">
+                  ${totalAdvanced.toLocaleString()}
+                </div>
+                <div className="text-[10px] text-gray-400 mt-1">
+                  只計算分店支出
+                </div>
+              </div>
+              <div className="bg-white p-4 rounded-xl shadow-sm border-l-4 border-orange-400">
+                <div className="text-gray-500 text-xs font-bold mb-1">
+                  本月家用/個人花費
+                </div>
+                <div className="text-xl font-bold text-gray-900">
+                  ${totalPersonalExpense.toLocaleString()}
+                </div>
+              </div>
+            </div>
+            <h3 className="text-sm font-bold text-gray-600 mb-3 px-1">
+              各店本月損益 (賺 - 賠)
+            </h3>
+            <div className="space-y-3">
+              {reportData.map((shop) => (
+                <div
+                  key={shop.id}
+                  className="bg-white p-4 rounded-xl shadow-sm flex justify-between items-center"
+                >
+                  <div className="flex items-center">
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${shop.color}`}
+                    >
+                      <span className="text-lg font-bold">
+                        {shop.name.charAt(0)}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="font-bold text-gray-800">{shop.name}</div>
+                      <div className="text-[10px] text-gray-400">
+                        收 ${shop.income.toLocaleString()} / 支 $
+                        {shop.expense.toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    className={`text-right font-bold ${
+                      shop.income - shop.expense >= 0
+                        ? "text-green-600"
+                        : "text-red-500"
+                    }`}
+                  >
+                    {shop.income - shop.expense >= 0 ? "+" : ""}
+                    {(shop.income - shop.expense).toLocaleString()}
+                    <div className="text-[10px] font-normal text-gray-400">
+                      淨利
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      };
+
+      const ListView = ({ transactions, handleDelete }) => {
+        const [filterShop, setFilterShop] = useState("all");
+        const displayTx = transactions
+          .filter((t) => filterShop === "all" || t.shopId === filterShop)
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        return (
+          <div className="p-4 pb-24 max-w-md mx-auto">
+            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center justify-between">
+              <span className="flex items-center">
+                <ListIcon className="w-6 h-6 mr-2 text-green-600" /> 帳務明細
+              </span>
+              <select
+                className="text-sm border rounded p-1"
+                value={filterShop}
+                onChange={(e) => setFilterShop(e.target.value)}
+              >
+                <option value="all">全部紀錄</option>
+                {SHOPS.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </h2>
+            <div className="space-y-2">
+              {displayTx.length === 0 && (
+                <div className="text-center text-gray-400 py-10">尚無資料</div>
+              )}
+              {displayTx.map((tx) => {
+                const shop = SHOPS.find((s) => s.id === tx.shopId);
+                const isPersonal = isPersonalAccount(tx.accountId);
+                const isTransfer = tx.type === "transfer";
+                return (
+                  <div
+                    key={tx.id}
+                    className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 flex justify-between items-center"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`text-xs font-bold px-2 py-1 rounded ${shop?.color}`}
+                      >
+                        {shop?.name.slice(0, 2)}
+                      </div>
+                      <div>
+                        <div className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                          {isTransfer ? (
+                            <span className="text-blue-600 flex items-center">
+                              轉帳 <ArrowRightLeft className="w-3 h-3 ml-1" />
+                            </span>
+                          ) : (
+                            tx.category
+                          )}
+                          <span className="text-[10px] text-gray-400 border px-1 rounded">
+                            {tx.user === "husband" ? "👨" : "👩"}
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {isTransfer ? (
+                            <span className="flex items-center gap-1 bg-gray-100 px-1 rounded">
+                              {getAccountName(tx.accountId)}{" "}
+                              <span className="text-gray-400">➔</span>{" "}
+                              {getAccountName(tx.toAccountId)}
+                            </span>
+                          ) : (
+                            <span
+                              className={`px-1 rounded border ${
+                                isPersonal
+                                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                                  : "bg-gray-50 text-gray-500 border-gray-200"
+                              }`}
+                            >
+                              {getAccountName(tx.accountId)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-gray-400 mt-0.5">
+                          {tx.date} {tx.note && `• ${tx.note}`}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`font-bold ${
+                          tx.type === "income"
+                            ? "text-green-600"
+                            : tx.type === "expense"
+                            ? "text-red-500"
+                            : "text-blue-500"
+                        }`}
+                      >
+                        {tx.type === "income"
+                          ? "+"
+                          : tx.type === "expense"
+                          ? "-"
+                          : ""}
+                        ${tx.amount.toLocaleString()}
+                      </span>
+                      <button
+                        onClick={() => handleDelete(tx.id)}
+                        className="text-gray-300 hover:text-red-500"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      };
+
+      function App() {
+        const [view, setView] = useState("add");
+        const [transactions, setTransactions] = useState(() =>
+          JSON.parse(localStorage.getItem("boss_finance_data_v3") || "[]")
+        );
+        const [billSettings, setBillSettings] = useState(() =>
+          JSON.parse(
+            localStorage.getItem("boss_finance_bills_settings") ||
+              JSON.stringify(INITIAL_BILL_SETTINGS)
+          )
+        );
+        const [currentUser, setCurrentUser] = useState(
+          () => localStorage.getItem("boss_finance_user") || "wife"
+        );
+
+        // Form states
+        const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+        const [selectedShop, setSelectedShop] = useState(SHOPS[0].id);
+        const [type, setType] = useState("expense");
+        const [amount, setAmount] = useState("");
+        const [category, setCategory] = useState("");
+        const [accountId, setAccountId] = useState("my_cash");
+        const [toAccountId, setToAccountId] = useState("my_ctbc");
+        const [note, setNote] = useState("");
+
+        useEffect(
+          () =>
+            localStorage.setItem(
+              "boss_finance_data_v3",
+              JSON.stringify(transactions)
+            ),
+          [transactions]
+        );
+        useEffect(
+          () =>
+            localStorage.setItem(
+              "boss_finance_bills_settings",
+              JSON.stringify(billSettings)
+            ),
+          [billSettings]
+        );
+        useEffect(
+          () => localStorage.setItem("boss_finance_user", currentUser),
+          [currentUser]
+        );
+
+        const currentShopType =
+          SHOPS.find((s) => s.id === selectedShop)?.type || "business";
+        const availableCategories = useMemo(
+          () =>
+            currentShopType === "business"
+              ? type === "expense"
+                ? CATEGORIES.business_expense
+                : CATEGORIES.business_income
+              : type === "expense"
+              ? CATEGORIES.personal_expense
+              : CATEGORIES.personal_income,
+          [currentShopType, type]
+        );
+        useEffect(() => {
+          if (type !== "transfer") setCategory(availableCategories[0]);
+        }, [type, selectedShop, currentShopType]);
+
+        const handleSave = () => {
+          if (!amount) return alert("請輸入金額");
+          handleAddTransaction({
+            id: Date.now(),
+            date,
+            shopId: selectedShop,
+            type,
+            amount: parseFloat(amount),
+            category: type === "transfer" ? "內部轉帳" : category,
+            accountId,
+            toAccountId: type === "transfer" ? toAccountId : null,
+            note,
+            user: currentUser,
+          });
+          setAmount("");
+          setNote("");
+          alert("已記錄！");
+        };
+        const handleAddTransaction = (newTx) => {
+          if (!newTx.user) newTx.user = currentUser; // Ensure user is tagged
+          setTransactions((prev) => [newTx, ...prev]);
+        };
+        const handleDelete = (id) =>
+          confirm("刪除？") &&
+          setTransactions(transactions.filter((t) => t.id !== id));
+
+        const toggleUser = () =>
+          setCurrentUser((prev) => (prev === "wife" ? "husband" : "wife"));
+
+        return (
+          <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+            {/* Header User Toggle */}
+            <div className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 px-4 py-2 flex justify-between items-center z-40 shadow-sm h-12">
+              <div className="font-bold text-gray-800 flex items-center">
+                <Briefcase size={16} className="mr-1 text-blue-600" /> 財務總管
+              </div>
+              <button
+                onClick={toggleUser}
+                className={`flex items-center px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                  currentUser === "wife"
+                    ? "bg-pink-100 text-pink-700"
+                    : "bg-blue-100 text-blue-700"
+                }`}
+              >
+                {currentUser === "wife" ? "👩 老婆記帳中" : "👨 老公記帳中"}
+                <span className="ml-2 opacity-50 text-[10px]">點擊切換</span>
+              </button>
+            </div>
+            <div className="h-12"></div>
+
+            {view === "add" && (
+              <AddView
+                date={date}
+                setDate={setDate}
+                selectedShop={selectedShop}
+                setSelectedShop={setSelectedShop}
+                type={type}
+                setType={setType}
+                amount={amount}
+                setAmount={setAmount}
+                category={category}
+                setCategory={setCategory}
+                accountId={accountId}
+                setAccountId={setAccountId}
+                toAccountId={toAccountId}
+                setToAccountId={setToAccountId}
+                note={note}
+                setNote={setNote}
+                handleSave={handleSave}
+                availableCategories={availableCategories}
+                user={currentUser}
+              />
+            )}
+            {view === "bills" && (
+              <BillDashboard
+                settings={billSettings}
+                transactions={transactions}
+                handleAddTransaction={handleAddTransaction}
+                setView={setView}
+              />
+            )}
+            {view === "settings" && (
+              <BillSettingsView
+                settings={billSettings}
+                setSettings={setBillSettings}
+                setView={setView}
+              />
+            )}
+            {view === "list" && (
+              <ListView
+                transactions={transactions}
+                handleDelete={handleDelete}
+              />
+            )}
+            {view === "report" && <ReportView transactions={transactions} />}
+
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3 flex justify-between items-center pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
+              <button
+                onClick={() => setView("add")}
+                className={`flex flex-col items-center space-y-1 ${
+                  view === "add" ? "text-blue-600" : "text-gray-400"
+                }`}
+              >
+                <div
+                  className={`p-1 rounded-full ${
+                    view === "add" ? "bg-blue-50" : ""
+                  }`}
+                >
+                  <Plus size={24} strokeWidth={2.5} />
+                </div>
+                <span className="text-[10px] font-bold">記帳</span>
+              </button>
+              <button
+                onClick={() => setView("bills")}
+                className={`flex flex-col items-center space-y-1 ${
+                  view === "bills" || view === "settings"
+                    ? "text-blue-600"
+                    : "text-gray-400"
+                }`}
+              >
+                <div
+                  className={`p-1 rounded-full ${
+                    view === "bills" ? "bg-blue-50" : ""
+                  }`}
+                >
+                  <Calendar size={24} strokeWidth={2.5} />
+                </div>
+                <span className="text-[10px] font-bold">帳單</span>
+              </button>
+              <button
+                onClick={() => setView("list")}
+                className={`flex flex-col items-center space-y-1 ${
+                  view === "list" ? "text-blue-600" : "text-gray-400"
+                }`}
+              >
+                <ListIcon size={24} strokeWidth={2.5} />
+                <span className="text-[10px] font-bold">明細</span>
+              </button>
+              <button
+                onClick={() => setView("report")}
+                className={`flex flex-col items-center space-y-1 ${
+                  view === "report" ? "text-blue-600" : "text-gray-400"
+                }`}
+              >
+                <PieChart size={24} strokeWidth={2.5} />
+                <span className="text-[10px] font-bold">報表</span>
+              </button>
+            </div>
+            <div className="h-20"></div>
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
